@@ -61,8 +61,8 @@ def symbols_to_prob(symbols):
     # count number of occurrances of each simbol in *argv (return as list of just the count)
     asList = list(myCounter(symbols).values())
 
-    # total count of symbols
-    N = sum(asList)
+    # total count of symbols; float to prevent integer division in next line
+    N = np.float(sum(asList))
 
     return np.array([n/N for n in asList])
 
