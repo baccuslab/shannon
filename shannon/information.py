@@ -3,7 +3,7 @@ information.py
 '''
 __all__ = ['entropy', 'symbols_to_prob', 'combine_symbols', 'mi', 'cond_mi', 'mi_chain_rule']
 import numpy as np
-import pdb as pdb
+import pdb 
 
 def entropy(data=None, prob=None, errorVal=1e-5):
     '''
