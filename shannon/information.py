@@ -96,10 +96,15 @@ def mi(x, y):
     #pdb.set_trace()
     # dict.values() returns a view object that has to be converted to a list before being
     # converted to an array
-    if isinstance(x, zip):
-        x = list(x)
-    if isinstance(y, zip):
-        y = list(y)
+    # the following lines will execute properly in python3, but not python2 because there
+    # is no zip object
+    try:
+        if isinstance(x, zip):
+            x = list(x)
+        if isinstance(y, zip):
+            y = list(y)
+    except:
+        pass
 
     probX = symbols_to_prob(x)
     probY = symbols_to_prob(y)
