@@ -67,6 +67,43 @@ def symbols_to_prob(symbols):
     return np.array([n/N for n in asList])
 
 def combine_symbols(*args):
+    '''
+    Combine different symbols into a 'super'-symbol
+
+    args can be an iterable of iterables that support hashing
+
+    see example for 2D ndarray input
+    
+    usage:
+        1) combine two symbols, each a number into just one symbol
+        x = numpy.random.randint(0,4,1000)
+        y = numpy.random.randint(0,2,1000)
+        z = combine_symbols(x,y)
+
+        2) combine a letter and a number
+        s = 'abcd'
+        x = numpy.random.randint(0,4,1000)
+        y = [s[randint(4)] for i in range(1000)]
+        z = combine_symbols(x,y)
+
+        3) suppose you are running an experiment and for each sample, you measure 3 different
+        properties and you put the data into a 2d ndarray such that:
+            samples_N, properties_N = data.shape
+        
+        and you want to combine all 3 different properties into just 1 symbol
+        In this case you have to find a way to impute each property as an independent array
+            
+            combined_symbol = combine_symbols(*data.T)
+
+        
+        4) if data from 3) is such that:
+            properties_N, samples_N  = data.shape
+        
+        then run:
+
+            combined_symbol = combine_symbols(*data)
+
+    '''
     #pdb.set_trace()
     for arg in args:
         if len(arg)!=len(args[0]):
