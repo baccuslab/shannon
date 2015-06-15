@@ -3,21 +3,50 @@ information.py
 '''
 __all__ = ['entropy', 'symbols_to_prob', 'combine_symbols', 'mi', 'cond_mi', 'mi_chain_rule']
 import numpy as np
-import pdb as pdb
+import pdb 
 
-def entropy(data=None, prob=None, errorVal=1e-5):
+def getrho(x):
+    '''
+    Helper function for nearest-neighbors entropy. Returns the nearest
+    neighbor distance in N dimensions.
+    '''
+    if len(x.shape) < 2:
+        x = np.reshape(x, (x.shape[0],1))
+    D = squareform(pdist(x, 'euclidean'))
+    D = D + np.max(D)*eye(D.shape[0])
+    return np.min(D, axis=0)
+
+
+def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVal=1e-5):
     '''
     given a probability distribution (prob) or an interable of symbols (data) compute and
-    return its entropy
+    return its continuous entropy.
 
     inputs:
     ------
-        data:       iterable of symbols
+        data:       samples by dimensions ndarray
 
         prob:       iterable with probabilities
+
+        method:     'nearest-neighbors', 'gaussian', or 'bin'
+
+        bins:       either a list of num_bins, or a list of lists containing 
+                    the bin edges
         
         errorVal:   if prob is given, 'entropy' checks that the sum is about 1.
                     It raises an error if abs(sum(prob)-1) >= errorVal
+
+        Different Methods:
+
+        'nearest-neighbors' computes the binless entropy (bits) of a random vector
+        using average nearest neighbors distance (Kozachenko and Leonenko, 1987).
+        For a review see Beirlant et al., 2001 or Chandler & Field, 2007.
+
+        'gaussian' computes the binless entropy based on estimating the covariance
+        matrix and assuming the data is normally distributed.
+
+        'bin' discretizes the data and computes the discrete entropy.
+        
     '''
     
     #pdb.set_trace()
@@ -33,19 +62,60 @@ def entropy(data=None, prob=None, errorVal=1e-5):
     if prob is not None and abs(prob.sum()-1) > errorVal:
         raise ValueError("parameter 'prob' in '%s.entropy' should sum to 1"%(__name__))
     
+    if data:
+        num_samples    = data.shape[0]
+        num_dimensions = data.shape[1]
 
-    if data is not None:
-        prob = symbols_to_prob(data)
+    if method == 'nearest-neighbors':
+        from scipy.spatial.distance import pdist, squareform
+        from scipy.special import gamma
+
+        def getrho(x):
+            '''
+            Helper function for nearest-neighbors entropy. Returns the nearest
+            neighbor distance in N dimensions.
+            '''
+            if len(x.shape) < 2:
+                x = np.reshape(x, (x.shape[0],1))
+            D = squareform(pdist(x, 'euclidean'))
+            D = D + np.max(D)*eye(D.shape[0])
+            return np.min(D, axis=0)
+
+        if data is None:
+            raise ValueError('Nearest neighbors entropy requires original data')
+
+        if len(data.shape) > 1:
+            k = num_dimensions
+        else:
+            k = 1
+        
+        Ak  = (k*pi**(float(k)/float(2)))/gamma(float(k)/float(2)+1)
+        rho = getrho(data)
+        
+        # 0.577215... is the Euler-Mascheroni constant
+        return k*mean(log2(rho)) + log2(num_samples*Ak/k) + log2(e)*0.5772156649
+
+    elif method == 'gaussian':
+        from numpy.linalg import det
+
+        detCov = det(data.dot(data.transpose()))
+        normalization = (2*pi*e)**num_dimensions
+        
+        return 0.5*np.log(normalization*detCov)
+
+    elif method == 'bin':
+        if data is not None:
+            prob = symbols_to_prob(data, bins=bins)
     
-    # compute the log2 of the probability and change any -inf by 0s
-    logProb = np.log2(prob)
-    logProb[logProb==-np.inf] = 0
+        # compute the log2 of the probability and change any -inf by 0s
+        logProb = np.log2(prob)
+        logProb[logProb==-np.inf] = 0
     
-    # return dot product of logProb and prob
-    return -1.0* np.dot(prob, logProb)
+        # return dot product of logProb and prob
+        return -1.0* np.dot(prob, logProb)
 
 
-def symbols_to_prob(symbols):
+def symbols_to_prob(symbols, bins=None):
     '''
     Return the probability distribution of symbols. Only probabilities are returned and in random order, 
     you don't know what the probability of a given label is but this can be used to compute entropy
@@ -61,49 +131,12 @@ def symbols_to_prob(symbols):
     # count number of occurrances of each simbol in *argv (return as list of just the count)
     asList = list(myCounter(symbols).values())
 
-    # total count of symbols
-    N = sum(asList)
+    # total count of symbols; float to prevent integer division in next line
+    N = np.float(sum(asList))
 
     return np.array([n/N for n in asList])
 
 def combine_symbols(*args):
-    '''
-    Combine different symbols into a 'super'-symbol
-
-    args can be an iterable of iterables that support hashing
-
-    see example for 2D ndarray input
-    
-    usage:
-        1) combine two symbols, each a number into just one symbol
-        x = numpy.random.randint(0,4,1000)
-        y = numpy.random.randint(0,2,1000)
-        z = combine_symbols(x,y)
-
-        2) combine a letter and a number
-        s = 'abcd'
-        x = numpy.random.randint(0,4,1000)
-        y = [s[randint(4)] for i in range(1000)]
-        z = combine_symbols(x,y)
-
-        3) suppose you are running an experiment and for each sample, you measure 3 different
-        properties and you put the data into a 2d ndarray such that:
-            samples_N, properties_N = data.shape
-        
-        and you want to combine all 3 different properties into just 1 symbol
-        In this case you have to find a way to impute each property as an independent array
-            
-            combined_symbol = combine_symbols(*data.T)
-
-        
-        4) if data from 3) is such that:
-            properties_N, samples_N  = data.shape
-        
-        then run:
-
-            combined_symbol = combine_symbols(*data)
-
-    '''
     #pdb.set_trace()
     for arg in args:
         if len(arg)!=len(args[0]):
@@ -133,10 +166,15 @@ def mi(x, y):
     #pdb.set_trace()
     # dict.values() returns a view object that has to be converted to a list before being
     # converted to an array
-    if isinstance(x, zip):
-        x = list(x)
-    if isinstance(y, zip):
-        y = list(y)
+    # the following lines will execute properly in python3, but not python2 because there
+    # is no zip object
+    try:
+        if isinstance(x, zip):
+            x = list(x)
+        if isinstance(y, zip):
+            y = list(y)
+    except:
+        pass
 
     probX = symbols_to_prob(x)
     probY = symbols_to_prob(y)
