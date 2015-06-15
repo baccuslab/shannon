@@ -1,5 +1,5 @@
 from nose.tools import assert_equal, assert_true, assert_raises, assert_almost_equal, assert_equals
-import shannon.information as info
+import shannon.discrete as info
 from numpy import array, mod
 from numpy.random import randint
 from numpy.testing import assert_array_almost_equal
