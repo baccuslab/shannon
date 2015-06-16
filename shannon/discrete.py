@@ -207,3 +207,53 @@ def mi_chain_rule(X, y):
         
     return chain
     
+def bin(x, bins, maxX=None, minX=None):
+    '''
+    bin signal x using 'binsN' bin. If minX, maxX are None, they default to the full 
+    range of the signal. If they are not None, everything above maxX gets assigned to
+    binsN-1 and everything below minX gets assigned to 0, this is effectively the same
+    as clipping x before passing it to 'bin'
+
+    input:
+    -----
+        x:      signal to be binned, some sort of iterable
+
+        bins:   int, number of bins
+                iterable, bin edges
+
+        maxX:   clips data above maxX
+
+        minX:   clips data below maxX
+
+    output:
+    ------
+        binnedX:    x after being binned
+
+        bins:       bins used for binning.
+                    if input 'bins' is already an iterable it just returns the
+                    same iterable
+
+    example:
+        # make 10 bins of equal length spanning from x.min() to x.max()
+        bin(x, 10)      
+
+        # use predefined bins such that each bin has the same number of points (maximize
+        entropy)
+        binsN = 10
+        percentiles = list(np.arange(0, 100.1, 100/binsN)) 
+        bins = np.percentile(x, percentiles)
+        bin(x, bins)
+    '''
+    #pdb.set_trace()
+    if maxX is None:
+        maxX = x.max()
+
+    if minX is None:
+        minX = x.min()
+
+    if not np.iterable(bins):
+        bins = np.linspace(minX, maxX+1e-5, bins+1)
+    
+    # digitize works on 1d array but not nd arrays. 
+    # So I pass the flattened version of x and then reshape back into x's original shape
+    return np.digitize(x.flatten(), bins).reshape(x.shape), bins

@@ -1,8 +1,8 @@
-from nose.tools import assert_equal, assert_true, assert_raises, assert_almost_equal, assert_equals
+from nose.tools import assert_equal, assert_true, assert_raises, assert_almost_equal
 import shannon.discrete as info
-from numpy import array, mod
-from numpy.random import randint
-from numpy.testing import assert_array_almost_equal
+from numpy import array, mod, arange, histogram
+from numpy.random import randint, randn
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 import pdb
 #import Information.Shannon_info
 
@@ -96,4 +96,14 @@ def test_combine_symbols():
     x = (1,2,3,4)
     y = (1,2,3)
     assert_raises(ValueError, info.combine_symbols, x, y)
+
+def test_bin():
+    x = arange(0, 1, 0.001)
+
+    # bin into 10 bins (each with 100 symbols)
+    y, _ = info.bin(x, 10)
+    h, _ = histogram(y,10)
+    z = [100]*10
+    assert_array_equal(h,z)
+
 
