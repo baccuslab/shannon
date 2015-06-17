@@ -136,16 +136,8 @@ def symbols_to_prob(data, bins=None, tol=10e-5):
     return prob
 
 
-def combine_symbols(*args):
-    #pdb.set_trace()
-    for arg in args:
-        if len(arg)!=len(args[0]):
-            raise ValueError("combine_symbols got inputs with different sizes")
 
-    return tuple(zip(*args))
-
-
-def mi(x, y):
+def mi(x, y, bins_x=None, bins_y=None, binx_xy=None, method='nearest-neighbors'):
     '''
     compute and return the mutual information between x and y
     
@@ -176,11 +168,13 @@ def mi(x, y):
     except:
         pass
 
-    probX = symbols_to_prob(x)
-    probY = symbols_to_prob(y)
-    probXY = symbols_to_prob(zip(x, y))
 
-    return entropy(prob=probX) + entropy(prob=probY) - entropy(prob=probXY)
+    HX  = entropy(data=x, bins=bins_x, method=method)
+    HY  = entropy(data=y, bins=bins_y, method=method)
+    HXY = entropy(data=np.concatenate([x,y],axis=1), bins=bins_xy, method=method)
+
+    return HX + HY - HXY
+
 
 def cond_mi(x, y, z):
     '''
