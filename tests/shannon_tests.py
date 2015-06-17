@@ -39,7 +39,7 @@ def test_symbols_to_prob():
     # a trivial example
     x=[1]*5 + [2]*5
     prob0=array((.5, .5))           # this is what the probabilities should be
-    prob1=info.symbols_to_prob(x)
+    prob1=info.symbols_to_prob(x).prob()
     assert_true((prob0==prob1).all())
 
     # an example combining different symbols
@@ -50,7 +50,7 @@ def test_symbols_to_prob():
     s1 = info.combine_symbols(s0, z)     # split combination of symbols in two lines and test
                                         # chain rule for combining symbols as well
     prob0 = array([.25]*4)
-    prob1 = info.symbols_to_prob(s1)
+    prob1 = info.symbols_to_prob(s1).prob()
     assert_true((prob0==prob1).all())
 
 def test_mi():
