@@ -5,18 +5,6 @@ __all__ = ['entropy', 'symbols_to_prob', 'combine_symbols', 'mi', 'cond_mi', 'mi
 import numpy as np
 import pdb 
 
-def getrho(x):
-    '''
-    Helper function for nearest-neighbors entropy. Returns the nearest
-    neighbor distance in N dimensions.
-    '''
-    if len(x.shape) < 2:
-        x = np.reshape(x, (x.shape[0],1))
-    D = squareform(pdist(x, 'euclidean'))
-    D = D + np.max(D)*eye(D.shape[0])
-    return np.min(D, axis=0)
-
-
 def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVal=1e-5):
     '''
     given a probability distribution (prob) or an interable of symbols (data) compute and
@@ -98,12 +86,18 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
     elif method == 'gaussian':
         from numpy.linalg import det
 
+        if data is None:
+            raise ValueError('Nearest neighbors entropy requires original data')
+
         detCov = det(data.dot(data.transpose()))
         normalization = (2*pi*e)**num_dimensions
         
         return 0.5*np.log(normalization*detCov)
 
     elif method == 'bin':
+        if prob is None and bins is None:
+            raise ValueError('Either prob or bins must be specified.')
+
         if data is not None:
             prob = symbols_to_prob(data, bins=bins)
     
@@ -111,30 +105,36 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
         logProb = np.log2(prob)
         logProb[logProb==-np.inf] = 0
     
-        # return dot product of logProb and prob
-        return -1.0* np.dot(prob, logProb)
+        # return sum of product of logProb and prob 
+        # (not using np.dot here because prob, logprob are nd arrays)
+        return -1.0* sum(prob * logProb)
 
 
-def symbols_to_prob(symbols, bins=None):
+def symbols_to_prob(data, bins=None, tol=10e-5):
     '''
+
     Return the probability distribution of symbols. Only probabilities are returned and in random order, 
     you don't know what the probability of a given label is but this can be used to compute entropy
 
     input:
-        symbols:     iterable of hashable items
-                     works well if symbols is a zip of iterables
+        data:     ndarray of shape (samples, dimensions)
+        bins:     either list of num_bins, or list of list of bin edges
+        tol:      tolerance for determining if probabilities sum to 1
+
+    returns:
+        prob:     returns list of 1-d np arrays each containing probability of discretized symbols
     '''
-    from collections import Counter
-    myCounter = Counter
-    
-    #pdb.set_trace()
-    # count number of occurrances of each simbol in *argv (return as list of just the count)
-    asList = list(myCounter(symbols).values())
+    dimensionality = data.shape[1]
+    if len(bins) != dimensionality:
+        raise ValueError("Data dimensionality is %d but you only specified bins for %d dimensions."%(dimensionality, len(bins)))
 
-    # total count of symbols; float to prevent integer division in next line
-    N = np.float(sum(asList))
+    prob = np.histogramdd(data, bins, normed=True)
 
-    return np.array([n/N for n in asList])
+    if abs(sum(prob) - 1) > tol:
+        raise ValueError("Probabilities should sum to 1, but actually sum to %f."%(sum(prob)))
+
+    return prob
+
 
 def combine_symbols(*args):
     #pdb.set_trace()
