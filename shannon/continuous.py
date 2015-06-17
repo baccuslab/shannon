@@ -1,7 +1,7 @@
 '''
 information.py
 '''
-__all__ = ['entropy', 'symbols_to_prob', 'combine_symbols', 'mi', 'cond_mi', 'mi_chain_rule']
+__all__ = ['entropy', 'symbols_to_prob', 'mi']
 import numpy as np
 import pdb 
 
@@ -174,63 +174,3 @@ def mi(x, y, bins_x=None, bins_y=None, binx_xy=None, method='nearest-neighbors')
     HXY = entropy(data=np.concatenate([x,y],axis=1), bins=bins_xy, method=method)
 
     return HX + HY - HXY
-
-
-def cond_mi(x, y, z):
-    '''
-    compute and return the mutual information between x and y given z, I(x, y | z)
-    
-    inputs:
-    -------
-        x, y, z:   iterables with discrete symbols
-    
-    output:
-    -------
-        mi:     float
-
-    implementation notes:
-    ---------------------
-        I(x, y | z) = H(x | z) - H(x | y, z)
-                    = H(x, z) - H(z) - ( H(x, y, z) - H(y,z) )
-                    = H(x, z) + H(y, z) - H(z) - H(x, y, z)
-    '''
-    #pdb.set_trace()
-    # dict.values() returns a view object that has to be converted to a list before being converted to an array
-    probXZ = symbols_to_prob(combine_symbols(x, z))
-    probYZ = symbols_to_prob(combine_symbols(y, z))
-    probXYZ =symbols_to_prob(combine_symbols(x, y, z))
-    probZ = symbols_to_prob(z)
-
-    return entropy(prob=probXZ) + entropy(prob=probYZ) - entropy(prob=probXYZ) - entropy(prob=probZ)
-
-def mi_chain_rule(X, y):
-    '''
-    Decompose the information between all X and y according to the chain rule and return all the terms in the chain rule.
-    
-    Inputs:
-    -------
-        X:          iterable of iterables. You should be able to compute [mi(x, y) for x in X]
-
-        y:          iterable of symbols
-
-    output:
-    -------
-        ndarray:    terms of chaing rule
-
-    Implemenation notes:
-        I(X; y) = I(x0, x1, ..., xn; y)
-                = I(x0; y) + I(x1;y | x0) + I(x2; y | x0, x1) + ... + I(xn; y | x0, x1, ..., xn-1)
-    '''
-    
-    # allocate ndarray output
-    chain = np.zeros(len(X))
-
-    # first term in the expansion is not a conditional information, but the information between the first x and y
-    chain[0] = mi(X[0], y)
-    
-    #pdb.set_trace()
-    for i in range(1, len(X)):
-        chain[i] = cond_mi(X[i], y, X[:i])
-        
-    return chain
-    
