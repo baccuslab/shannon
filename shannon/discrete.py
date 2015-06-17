@@ -5,6 +5,11 @@ __all__ = ['entropy', 'symbols_to_prob', 'combine_symbols', 'mi', 'cond_mi', 'mi
 import numpy as np
 import pdb 
 
+from collections import Counter
+class Counter(Counter):
+    def prob(self):
+        return np.array(list(self.values()))
+
 def entropy(data=None, prob=None, errorVal=1e-5):
     '''
     given a probability distribution (prob) or an interable of symbols (data) compute and
@@ -35,7 +40,7 @@ def entropy(data=None, prob=None, errorVal=1e-5):
     
 
     if data is not None:
-        prob = symbols_to_prob(data)
+        prob = symbols_to_prob(data).prob()
     
     # compute the log2 of the probability and change any -inf by 0s
     logProb = np.log2(prob)
@@ -47,24 +52,24 @@ def entropy(data=None, prob=None, errorVal=1e-5):
 
 def symbols_to_prob(symbols):
     '''
-    Return the probability distribution of symbols. Only probabilities are returned and in random order, 
-    you don't know what the probability of a given label is but this can be used to compute entropy
+    Return a dict mapping symbols to  probability.
 
     input:
+    -----
         symbols:     iterable of hashable items
                      works well if symbols is a zip of iterables
     '''
-    from collections import Counter
-    myCounter = Counter
+    myCounter = Counter(symbols)
+
+    N = len(list(symbols))*1.0    # symbols might be a zip object in python 3
+                                  # in python 2 N has to be a float since otherwise n/N folds back to integer
+                                  # division
+
+    for k in myCounter:
+        myCounter[k] /= N
+
+    return myCounter
     
-    #pdb.set_trace()
-    # count number of occurrances of each simbol in *argv (return as list of just the count)
-    asList = list(myCounter(symbols).values())
-
-    # total count of symbols; float to prevent integer division in next line
-    N = np.float(sum(asList))
-
-    return np.array([n/N for n in asList])
 
 def combine_symbols(*args):
     '''
@@ -143,9 +148,9 @@ def mi(x, y):
     except:
         pass
 
-    probX = symbols_to_prob(x)
-    probY = symbols_to_prob(y)
-    probXY = symbols_to_prob(zip(x, y))
+    probX = symbols_to_prob(x).prob()
+    probY = symbols_to_prob(y).prob()
+    probXY = symbols_to_prob(combine_symbols(x, y)).prob()
 
     return entropy(prob=probX) + entropy(prob=probY) - entropy(prob=probXY)
 
@@ -169,10 +174,10 @@ def cond_mi(x, y, z):
     '''
     #pdb.set_trace()
     # dict.values() returns a view object that has to be converted to a list before being converted to an array
-    probXZ = symbols_to_prob(combine_symbols(x, z))
-    probYZ = symbols_to_prob(combine_symbols(y, z))
-    probXYZ =symbols_to_prob(combine_symbols(x, y, z))
-    probZ = symbols_to_prob(z)
+    probXZ = symbols_to_prob(combine_symbols(x, z)).prob()
+    probYZ = symbols_to_prob(combine_symbols(y, z)).prob()
+    probXYZ =symbols_to_prob(combine_symbols(x, y, z)).prob()
+    probZ = symbols_to_prob(z).prob()
 
     return entropy(prob=probXZ) + entropy(prob=probYZ) - entropy(prob=probXYZ) - entropy(prob=probZ)
 
