@@ -1,7 +1,7 @@
 '''
 information.py
 '''
-__all__ = ['entropy', 'symbols_to_prob', 'mi']
+__all__ = ['entropy', 'symbols_to_prob', 'mi', 'cond_entropy']
 import numpy as np
 import pdb 
 
@@ -137,13 +137,14 @@ def symbols_to_prob(data, bins=None, tol=10e-5):
 
 
 
-def mi(x, y, bins_x=None, bins_y=None, binx_xy=None, method='nearest-neighbors'):
+def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors'):
     '''
     compute and return the mutual information between x and y
     
     inputs:
     -------
-        x, y:   iterables of hashable items
+        x, y:       iterables of hashable items
+        method:     'nearest-neighbors', 'gaussian', or 'bin'
     
     output:
     -------
@@ -174,3 +175,16 @@ def mi(x, y, bins_x=None, bins_y=None, binx_xy=None, method='nearest-neighbors')
     HXY = entropy(data=np.concatenate([x,y],axis=1), bins=bins_xy, method=method)
 
     return HX + HY - HXY
+
+
+def cond_entropy(x, y, bins_y=None, bins_xy=None, method='nearest-neighbors'):
+    '''
+    compute the conditional entropy H(X|Y).
+    
+    method:     'nearest-neighbors', 'gaussian', or 'bin'
+                if 'bin' need to provide bins_y, and bins_xy
+    '''
+    HXY = entropy(data=np.concatenate([x,y],axis=1), bins=bins_xy, method=method)
+    HY  = entropy(data=y, bins=bins_y, method=method)
+
+    return HXY - HY
