@@ -3,7 +3,6 @@ information.py
 '''
 __all__ = ['entropy', 'symbols_to_prob', 'mi', 'cond_entropy']
 import numpy as np
-import pdb
 
 
 def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVal=1e-5):
@@ -38,7 +37,6 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
 
     '''
 
-    #pdb.set_trace()
     if prob is None and data is None:
         raise ValueError("%s.entropy requires either 'prob' or 'data' to be defined" % __name__)
 
@@ -108,7 +106,7 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
 
         # return sum of product of logProb and prob
         # (not using np.dot here because prob, logprob are nd arrays)
-        return -sum(prob * logProb)
+        return -float(np.sum(prob * logProb))
 
 
 def symbols_to_prob(data, bins=None, tol=10e-5):
@@ -156,7 +154,6 @@ def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors')
 
         info[p] = _info.mi(x, info.combine_symbols(y0, y1, ...) )
     '''
-    #pdb.set_trace()
     # dict.values() returns a view object that has to be converted to a list before being
     # converted to an array
     # the following lines will execute properly in python3, but not python2 because there
