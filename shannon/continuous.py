@@ -3,7 +3,8 @@ information.py
 '''
 __all__ = ['entropy', 'symbols_to_prob', 'mi', 'cond_entropy']
 import numpy as np
-import pdb 
+import pdb
+
 
 def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVal=1e-5):
     '''
@@ -18,9 +19,9 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
 
         method:     'nearest-neighbors', 'gaussian', or 'bin'
 
-        bins:       either a list of num_bins, or a list of lists containing 
+        bins:       either a list of num_bins, or a list of lists containing
                     the bin edges
-        
+
         errorVal:   if prob is given, 'entropy' checks that the sum is about 1.
                     It raises an error if abs(sum(prob)-1) >= errorVal
 
@@ -34,22 +35,22 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
         matrix and assuming the data is normally distributed.
 
         'bin' discretizes the data and computes the discrete entropy.
-        
+
     '''
-    
+
     #pdb.set_trace()
     if prob is None and data is None:
-        raise ValueError("%s.entropy requires either 'prob' or 'data' to be defined"%(__name__))
+        raise ValueError("%s.entropy requires either 'prob' or 'data' to be defined" % __name__)
 
     if prob is not None and data is not None:
-        raise ValueError("%s.entropy requires only 'prob' or 'data to be given but not both"%(__name__))
+        raise ValueError("%s.entropy requires only 'prob' or 'data to be given but not both" % __name__)
 
     if prob is not None and not isinstance(prob, np.ndarray):
-        raise TypeError("'entropy' in '%s' needs 'prob' to be an ndarray"%(__name__)) 
+        raise TypeError("'entropy' in '%s' needs 'prob' to be an ndarray" % __name__)
 
     if prob is not None and abs(prob.sum()-1) > errorVal:
-        raise ValueError("parameter 'prob' in '%s.entropy' should sum to 1"%(__name__))
-    
+        raise ValueError("parameter 'prob' in '%s.entropy' should sum to 1" % __name__)
+
     if data:
         num_samples    = data.shape[0]
         num_dimensions = data.shape[1]
@@ -64,9 +65,9 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
             neighbor distance in N dimensions.
             '''
             if len(x.shape) < 2:
-                x = np.reshape(x, (x.shape[0],1))
+                x = np.reshape(x, (x.shape[0], 1))
             D = squareform(pdist(x, 'euclidean'))
-            D = D + np.max(D)*eye(D.shape[0])
+            D = D + np.max(D)*np.eye(D.shape[0])
             return np.min(D, axis=0)
 
         if data is None:
@@ -76,12 +77,12 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
             k = num_dimensions
         else:
             k = 1
-        
-        Ak  = (k*pi**(float(k)/float(2)))/gamma(float(k)/float(2)+1)
+
+        Ak  = (k*np.pi**(float(k)/float(2)))/gamma(float(k)/float(2)+1)
         rho = getrho(data)
-        
-        # 0.577215... is the Euler-Mascheroni constant
-        return k*mean(log2(rho)) + log2(num_samples*Ak/k) + log2(e)*0.5772156649
+
+        # 0.577215... is the Euler-Mascheroni constant (np.euler_gamma)
+        return k*np.mean(np.log2(rho)) + np.log2(num_samples*Ak/k) + np.log2(np.exp(1))*np.euler_gamma
 
     elif method == 'gaussian':
         from numpy.linalg import det
@@ -90,8 +91,8 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
             raise ValueError('Nearest neighbors entropy requires original data')
 
         detCov = det(data.dot(data.transpose()))
-        normalization = (2*pi*e)**num_dimensions
-        
+        normalization = (2*np.pi*np.exp(1))**num_dimensions
+
         return 0.5*np.log(normalization*detCov)
 
     elif method == 'bin':
@@ -100,20 +101,20 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
 
         if data is not None:
             prob = symbols_to_prob(data, bins=bins)
-    
+
         # compute the log2 of the probability and change any -inf by 0s
         logProb = np.log2(prob)
-        logProb[logProb==-np.inf] = 0
-    
-        # return sum of product of logProb and prob 
+        logProb[logProb == -np.inf] = 0
+
+        # return sum of product of logProb and prob
         # (not using np.dot here because prob, logprob are nd arrays)
-        return -1.0* sum(prob * logProb)
+        return -sum(prob * logProb)
 
 
 def symbols_to_prob(data, bins=None, tol=10e-5):
     '''
 
-    Return the probability distribution of symbols. Only probabilities are returned and in random order, 
+    Return the probability distribution of symbols. Only probabilities are returned and in random order,
     you don't know what the probability of a given label is but this can be used to compute entropy
 
     input:
@@ -136,16 +137,15 @@ def symbols_to_prob(data, bins=None, tol=10e-5):
     return prob
 
 
-
 def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors'):
     '''
     compute and return the mutual information between x and y
-    
+
     inputs:
     -------
         x, y:       iterables of hashable items
         method:     'nearest-neighbors', 'gaussian', or 'bin'
-    
+
     output:
     -------
         mi:     float
@@ -153,7 +153,7 @@ def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors')
     Notes:
     ------
         if you are trying to mix several symbols together as in mi(x, (y0,y1,...)), try
-                
+
         info[p] = _info.mi(x, info.combine_symbols(y0, y1, ...) )
     '''
     #pdb.set_trace()
@@ -169,10 +169,9 @@ def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors')
     except:
         pass
 
-
     HX  = entropy(data=x, bins=bins_x, method=method)
     HY  = entropy(data=y, bins=bins_y, method=method)
-    HXY = entropy(data=np.concatenate([x,y],axis=1), bins=bins_xy, method=method)
+    HXY = entropy(data=np.concatenate([x, y], axis=1), bins=bins_xy, method=method)
 
     return HX + HY - HXY
 
@@ -180,11 +179,11 @@ def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors')
 def cond_entropy(x, y, bins_y=None, bins_xy=None, method='nearest-neighbors'):
     '''
     compute the conditional entropy H(X|Y).
-    
+
     method:     'nearest-neighbors', 'gaussian', or 'bin'
                 if 'bin' need to provide bins_y, and bins_xy
     '''
-    HXY = entropy(data=np.concatenate([x,y],axis=1), bins=bins_xy, method=method)
+    HXY = entropy(data=np.concatenate([x, y], axis=1), bins=bins_xy, method=method)
     HY  = entropy(data=y, bins=bins_y, method=method)
 
     return HXY - HY
