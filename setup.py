@@ -11,9 +11,10 @@ config = {
     'author_email': 'pjadzinsky@gmail.com;lmcintosh@stanford.edu',
     'version': '0.1',
     'install_requires': ['nose', 'numpy', 'scipy'],
-    'packages': ['shannon'],
+    'packages': [],
+    'py_modules': ['discrete', 'continuous', 'bottleneck'],
     'scripts': [],
-    'name', 'shannon'
+    'name': 'shannon'
     }
 
 setup(**config)

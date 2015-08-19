@@ -1,40 +1,36 @@
 """
-How much MI costs loosing a symbol?
-Implement a new idea, from x, y (iterables with discrete symbols)
+Implementing a new idea, from x, y (iterables with discrete symbols)
+How much MI does it cost to loose a symbol?
 loop through all the symbols in x and for each symbol, replace all its instances by other values
-in x (drawn from the the same probability distribution) and recompute the MI.
+in x (drawn from the the same probability probribution) and recompute the MI.
 """
-__all__ = ['toy_example', 'remove_sample_from_prob', 'inhibit_symbol', 'change_response', 
+__all__ = ['toy_example', 'remove_symbol_from_dist', 'inhibit_symbol', 'change_response', 
     'differentiate_mi']
 
-import Information.information as info
-from Information.information import Distribution
+from shannon import discrete
+#import shannon
 import numpy as np
 import matplotlib.pyplot as plt
 import pdb
 
-def remove_sample_from_prob(prob, index):
+def remove_symbol_from_dist(dist, index):
     '''
     prob is a ndarray representing a probability distribution.
-    index is a number between 0 and len(prob)-1
+    index is a number between 0 and and the number of symbols ( len(prob)-1 )
     return the probability distribution if the element at 'index' was no longer available
     '''
-    new_prob = prob[:]
+    if type(dist) is not Distribution:
+        raise TypeError("remove_symbol_from_dist got an object ot type {0}".format(type(dist)))
+
+    new_prob = dist.prob.copy()
     new_prob[index]=0
-    return new_prob/sum(new_prob)
+    new_prob /= sum(new_prob)
+    return Distribution(new_prob)
 
-def inhibit_symbol(myDist, index):
-    """
-    return a Districtibution object that has the same probability distribution as
-    in 'myDist' affter suppressing the symbol at 'index'
-    """
-    #pdb.set_trace()
 
-    return info.Distribution(remove_sample_from_prob(myDist.prob, index))
-
-def change_response(x, dist, index):
+def change_response(x, prob, index):
     '''
-    change every response in x that matches 'index' by randomly sampling from dist
+    change every response in x that matches 'index' by randomly sampling from prob
     '''
     #pdb.set_trace()
     N = (x==index).sum()
@@ -72,21 +68,47 @@ def differentiate_mi(x, y):
     and compute mi(new_x, y)
     '''
     #pdb.set_trace()
-    dist = info.Distribution(info.labels_to_prob(x))
+    dist = Distribution(discrete.symbols_to_prob(x))
 
     diff = np.zeros(len(dist.prob))
 
-    for i in range(len(dist.prob)-1):
-        #pdb.set_trace()
+    for i in range(len(dist.prob)):
         i = int(i)
-        dist = info.Distribution(inhibit_symbol(dist, i).prob)
+        dist = Distribution(remove_symbol_from_dist(dist, i).prob)
 
         new_x = change_response(x, dist, i)
 
-        diff[i] = info.mi(x,y)
+        diff[i] = discrete.mi(x,y)
 
     return diff
 
+class Distribution:
+    def __init__(self, prob):
+        
+        if type(prob) is not np.ndarray:
+            raise TypeError('Distribution requires an ndarray as its unique parameter')
+
+        self.prob = prob
+
+        self.cumsum = prob.cumsum()
+
+    def sample(self, *args):
+        '''
+        generate a random number in [0,1) and return the index into self.prob
+        such that self.prob[index] <= random_number but self.prob[index+1] > random_number
+
+        implementation note: the problem is identical to finding the index into self.cumsum
+        where the random number should be inserted to keep the array sorted. This is exactly
+        what searchsorted does. 
+
+        usage:
+            myDist = Distribution(array(0.5, .25, .25))
+            x = myDist.sample()         # generates 1 sample
+            x = myDist.sample(100)      # generates 100 samples
+            x = myDist.sample(10,10)    # generates a 10x10 ndarray
+        '''
+        return self.cumsum.searchsorted(np.random.rand(*args))
+        
 if __name__ == "__main__":
     x, y, diff = toy_example()
 
