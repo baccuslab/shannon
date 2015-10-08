@@ -208,6 +208,22 @@ def mi_chain_rule(X, y):
     return chain
 
 
+def KL_divergence(P,Q):
+    '''
+    Compute the KL divergence between distributions P and Q
+    
+    P and Q should be dictionaries linking symbols to probabilities.
+    the keys to P and Q should be the same.
+    '''
+    assert(P.keys()==Q.keys())
+    
+    distance = 0
+    for k in P.keys():
+        distance += P[k] * log(P[k]/Q[k])
+
+    return distance
+
+
 def bin(x, bins, maxX=None, minX=None):
     '''
     bin signal x using 'binsN' bin. If minX, maxX are None, they default to the full
