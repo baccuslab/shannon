@@ -5,7 +5,7 @@ __all__ = ['entropy', 'symbols_to_prob', 'mi', 'cond_entropy']
 import numpy as np
 
 
-def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVal=1e-5):
+def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVal=1e-5, units='bits'):
     '''
     given a probability distribution (prob) or an interable of symbols (data) compute and
     return its continuous entropy.
@@ -23,6 +23,8 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
 
         errorVal:   if prob is given, 'entropy' checks that the sum is about 1.
                     It raises an error if abs(sum(prob)-1) >= errorVal
+
+        units:      either 'bits' or 'nats'
 
         Different Methods:
 
@@ -82,8 +84,15 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
         Ak  = (k*np.pi**(float(k)/float(2)))/gamma(float(k)/float(2)+1)
         rho = getrho(data)
 
-        # 0.577215... is the Euler-Mascheroni constant (np.euler_gamma)
-        return k*np.mean(np.log2(rho)) + np.log2(num_samples*Ak/k) + np.log2(np.exp(1))*np.euler_gamma
+        if units is 'bits':
+            # 0.577215... is the Euler-Mascheroni constant (np.euler_gamma)
+            return k*np.mean(np.log2(rho)) + np.log2(num_samples*Ak/k) + np.log2(np.exp(1))*np.euler_gamma
+        elif units is 'nats':
+            # 0.577215... is the Euler-Mascheroni constant (np.euler_gamma)
+            return k*np.mean(np.log(rho)) + np.log(num_samples*Ak/k) + np.log(np.exp(1))*np.euler_gamma
+        else:
+            print('Units not recognized: {}'.format(units))
+
 
     elif method == 'gaussian':
         from numpy.linalg import det
@@ -97,7 +106,12 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
         if detCov == 0:
             return -np.inf
         else:
-            return 0.5*np.log(normalization*detCov)
+            if units is 'bits':
+                return 0.5*np.log2(normalization*detCov)
+            elif units is 'nats':
+                return 0.5*np.log(normalization*detCov)
+            else:
+                print('Units not recognized: {}'.format(units))
 
     elif method == 'bin':
         if prob is None and bins is None:
@@ -106,9 +120,16 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
         if data is not None:
             prob = symbols_to_prob(data, bins=bins)
 
-        # compute the log2 of the probability and change any -inf by 0s
-        logProb = np.log2(prob)
-        logProb[logProb == -np.inf] = 0
+        if units is 'bits':
+            # compute the log2 of the probability and change any -inf by 0s
+            logProb = np.log2(prob)
+            logProb[logProb == -np.inf] = 0
+        elif units is 'nats':
+            # compute the log2 of the probability and change any -inf by 0s
+            logProb = np.log(prob)
+            logProb[logProb == -np.inf] = 0
+        else:
+            print('Units not recognized: {}'.format(units))
 
         # return sum of product of logProb and prob
         # (not using np.dot here because prob, logprob are nd arrays)
@@ -141,7 +162,7 @@ def symbols_to_prob(data, bins=None, tol=10e-5):
     return prob
 
 
-def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors'):
+def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors', units='bits'):
     '''
     compute and return the mutual information between x and y
 
@@ -149,6 +170,7 @@ def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors')
     -------
         x, y:       numpy arrays of shape samples x dimension
         method:     'nearest-neighbors', 'gaussian', or 'bin'
+        units:      'bits' or 'nats'
 
     output:
     -------
@@ -182,21 +204,22 @@ def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors')
     except:
         pass
 
-    HX  = entropy(data=x, bins=bins_x, method=method)
-    HY  = entropy(data=y, bins=bins_y, method=method)
-    HXY = entropy(data=np.concatenate([x, y], axis=1), bins=bins_xy, method=method)
+    HX  = entropy(data=x, bins=bins_x, method=method, units=units)
+    HY  = entropy(data=y, bins=bins_y, method=method, units=units)
+    HXY = entropy(data=np.concatenate([x, y], axis=1), bins=bins_xy, method=method, units=units)
 
     return HX + HY - HXY
 
 
-def cond_entropy(x, y, bins_y=None, bins_xy=None, method='nearest-neighbors'):
+def cond_entropy(x, y, bins_y=None, bins_xy=None, method='nearest-neighbors', units='bits'):
     '''
     compute the conditional entropy H(X|Y).
 
     method:     'nearest-neighbors', 'gaussian', or 'bin'
                 if 'bin' need to provide bins_y, and bins_xy
+    units:      'bits' or 'nats'
     '''
-    HXY = entropy(data=np.concatenate([x, y], axis=1), bins=bins_xy, method=method)
-    HY  = entropy(data=y, bins=bins_y, method=method)
+    HXY = entropy(data=np.concatenate([x, y], axis=1), bins=bins_xy, method=method, units=units)
+    HY  = entropy(data=y, bins=bins_y, method=method, units=units)
 
     return HXY - HY
