@@ -49,9 +49,12 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
     if prob is not None and abs(prob.sum()-1) > errorVal:
         raise ValueError("parameter 'prob' in '%s.entropy' should sum to 1" % __name__)
 
-    if data:
+    if data.any():
         num_samples    = data.shape[0]
-        num_dimensions = data.shape[1]
+        if len(data.shape) == 1:
+            num_dimensions = 1
+        else:
+            num_dimensions = data.shape[1]
 
     if method == 'nearest-neighbors':
         from scipy.spatial.distance import pdist, squareform
@@ -141,7 +144,7 @@ def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors')
 
     inputs:
     -------
-        x, y:       iterables of hashable items
+        x, y:       numpy arrays of shape samples x dimension
         method:     'nearest-neighbors', 'gaussian', or 'bin'
 
     output:
