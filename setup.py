@@ -1,7 +1,7 @@
 try:
-  from setuptools import setup
+    from setuptools import setup
 except:
-  from distutils.core import setup
+    from distutils.core import setup
 
 config = {
     'description': "Compute entropy, Shannon's information and several related quantities",
@@ -11,10 +11,9 @@ config = {
     'author_email': 'pjadzinsky@gmail.com;lmcintosh@stanford.edu',
     'version': '0.1',
     'install_requires': ['nose', 'numpy', 'scipy'],
-    'packages': [],
-    'py_modules': ['discrete', 'continuous', 'bottleneck'],
+    'packages': ['shannon'],
     'scripts': [],
     'name': 'shannon'
-    }
+}
 
 setup(**config)
