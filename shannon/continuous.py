@@ -91,7 +91,7 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
         if data is None:
             raise ValueError('Nearest neighbors entropy requires original data')
 
-        detCov = det(data.dot(data.transpose()))
+        detCov = det(np.dot(data.transpose(), data)/num_samples)
         normalization = (2*np.pi*np.exp(1))**num_dimensions
 
         if detCov == 0:
