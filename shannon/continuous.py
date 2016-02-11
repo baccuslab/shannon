@@ -94,7 +94,10 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
         detCov = det(data.dot(data.transpose()))
         normalization = (2*np.pi*np.exp(1))**num_dimensions
 
-        return 0.5*np.log(normalization*detCov)
+        if detCov == 0:
+            return -np.inf
+        else:
+            return 0.5*np.log(normalization*detCov)
 
     elif method == 'bin':
         if prob is None and bins is None:
@@ -166,6 +169,16 @@ def mi(x, y, bins_x=None, bins_y=None, bins_xy=None, method='nearest-neighbors')
             x = list(x)
         if isinstance(y, zip):
             y = list(y)
+    except:
+        pass
+
+    # wrapped in try bracket because x, y might have no .shape attribute
+    try:
+        # handling for 1d np arrays
+        if len(x.shape) == 1:
+            x = np.expand_dims(x, 1)
+        if len(y.shape) == 1:
+            y = np.expand_dims(y, 1)
     except:
         pass
 
