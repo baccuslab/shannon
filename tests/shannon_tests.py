@@ -5,15 +5,6 @@ from numpy.random import randint, randn
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 import pdb
 
-def setup():
-  print("SETUP!")
-
-def teardown():
-  print("TEAR DOWN!")
-
-def test_basic():
-  print("I RAN!")
-
 def test_entropy():
     # test some simple cases
     #pdb.set_trace()
@@ -104,5 +95,3 @@ def test_bin():
     h, _ = histogram(y,10)
     z = [100]*10
     assert_array_equal(h,z)
-
-
