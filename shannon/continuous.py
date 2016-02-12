@@ -59,19 +59,8 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
             num_dimensions = data.shape[1]
 
     if method == 'nearest-neighbors':
-        from scipy.spatial.distance import pdist, squareform
+        from sklearn.neighbors import NearestNeighbors
         from scipy.special import gamma
-
-        def getrho(x):
-            '''
-            Helper function for nearest-neighbors entropy. Returns the nearest
-            neighbor distance in N dimensions.
-            '''
-            if len(x.shape) < 2:
-                x = np.reshape(x, (x.shape[0], 1))
-            D = squareform(pdist(x, 'euclidean'))
-            D = D + np.max(D)*np.eye(D.shape[0])
-            return np.min(D, axis=0)
 
         if data is None:
             raise ValueError('Nearest neighbors entropy requires original data')
@@ -81,8 +70,10 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
         else:
             k = 1
 
+        nbrs = NearestNeighbors(n_neighbors=2, algorithm='auto').fit(data)
+        distances, indices = nbrs.kneighbors(data)
+        rho = distances[:,1] # take nearest-neighbor distance (first column is always zero)
         Ak  = (k*np.pi**(float(k)/float(2)))/gamma(float(k)/float(2)+1)
-        rho = getrho(data)
 
         if units is 'bits':
             # 0.577215... is the Euler-Mascheroni constant (np.euler_gamma)
