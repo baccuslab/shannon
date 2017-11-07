@@ -51,8 +51,8 @@ def entropy(data=None, prob=None, method='nearest-neighbors', bins=None, errorVa
     if prob is not None and abs(prob.sum()-1) > errorVal:
         raise ValueError("parameter 'prob' in '%s.entropy' should sum to 1" % __name__)
 
-    if data.any():
-        num_samples    = data.shape[0]
+    if data is not None:
+        num_samples = data.shape[0]
         if len(data.shape) == 1:
             num_dimensions = 1
         else:
@@ -135,13 +135,15 @@ def symbols_to_prob(data, bins=None, tol=10e-5):
 
     input:
         data:     ndarray of shape (samples, dimensions)
-        bins:     either list of num_bins, or list of list of bin edges
+        bins:     either int, list of num_bins, or list of list of bin edges
         tol:      tolerance for determining if probabilities sum to 1
 
     returns:
         prob:     returns list of 1-d np arrays each containing probability of discretized symbols
     '''
     dimensionality = data.shape[1]
+    if isinstance(bins, int):
+        bins = dimensionality * [bins]
     if len(bins) != dimensionality:
         raise ValueError("Data dimensionality is %d but you only specified bins for %d dimensions."%(dimensionality, len(bins)))
 
